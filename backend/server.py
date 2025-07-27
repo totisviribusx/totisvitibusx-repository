@@ -123,7 +123,17 @@ async def delete_store(store_id: str):
 async def create_purchase(purchase: PurchaseCreate):
     purchase_dict = purchase.dict()
     purchase_obj = Purchase(**purchase_dict)
-    await db.purchases.insert_one(purchase_obj.dict())
+    
+    # Convert date objects to strings for MongoDB storage
+    purchase_data = purchase_obj.dict()
+    if purchase_data.get('order_date'):
+        purchase_data['order_date'] = purchase_data['order_date'].isoformat()
+    if purchase_data.get('expected_delivery'):
+        purchase_data['expected_delivery'] = purchase_data['expected_delivery'].isoformat()
+    if purchase_data.get('delivered_date'):
+        purchase_data['delivered_date'] = purchase_data['delivered_date'].isoformat()
+    
+    await db.purchases.insert_one(purchase_data)
     
     # Auto-create store if it doesn't exist and has URL
     if purchase.store_url:
