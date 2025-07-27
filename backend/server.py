@@ -179,6 +179,24 @@ async def get_purchase(purchase_id: str):
     purchase = await db.purchases.find_one({"id": purchase_id})
     if not purchase:
         raise HTTPException(status_code=404, detail="Purchase not found")
+    
+    # Convert string dates back to date objects for response model
+    if purchase.get('order_date') and isinstance(purchase['order_date'], str):
+        try:
+            purchase['order_date'] = datetime.fromisoformat(purchase['order_date']).date()
+        except:
+            pass
+    if purchase.get('expected_delivery') and isinstance(purchase['expected_delivery'], str):
+        try:
+            purchase['expected_delivery'] = datetime.fromisoformat(purchase['expected_delivery']).date()
+        except:
+            pass
+    if purchase.get('delivered_date') and isinstance(purchase['delivered_date'], str):
+        try:
+            purchase['delivered_date'] = datetime.fromisoformat(purchase['delivered_date']).date()
+        except:
+            pass
+    
     return Purchase(**purchase)
 
 @api_router.put("/purchases/{purchase_id}", response_model=Purchase)
