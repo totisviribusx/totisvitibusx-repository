@@ -204,6 +204,14 @@ async def update_purchase(purchase_id: str, purchase_update: PurchaseUpdate):
     update_dict = {k: v for k, v in purchase_update.dict().items() if v is not None}
     update_dict["updated_at"] = datetime.utcnow()
     
+    # Convert date objects to strings for MongoDB storage
+    if update_dict.get('order_date'):
+        update_dict['order_date'] = update_dict['order_date'].isoformat()
+    if update_dict.get('expected_delivery'):
+        update_dict['expected_delivery'] = update_dict['expected_delivery'].isoformat()
+    if update_dict.get('delivered_date'):
+        update_dict['delivered_date'] = update_dict['delivered_date'].isoformat()
+    
     result = await db.purchases.update_one(
         {"id": purchase_id}, 
         {"$set": update_dict}
@@ -213,6 +221,24 @@ async def update_purchase(purchase_id: str, purchase_update: PurchaseUpdate):
         raise HTTPException(status_code=404, detail="Purchase not found")
     
     updated_purchase = await db.purchases.find_one({"id": purchase_id})
+    
+    # Convert string dates back to date objects for response model
+    if updated_purchase.get('order_date') and isinstance(updated_purchase['order_date'], str):
+        try:
+            updated_purchase['order_date'] = datetime.fromisoformat(updated_purchase['order_date']).date()
+        except:
+            pass
+    if updated_purchase.get('expected_delivery') and isinstance(updated_purchase['expected_delivery'], str):
+        try:
+            updated_purchase['expected_delivery'] = datetime.fromisoformat(updated_purchase['expected_delivery']).date()
+        except:
+            pass
+    if updated_purchase.get('delivered_date') and isinstance(updated_purchase['delivered_date'], str):
+        try:
+            updated_purchase['delivered_date'] = datetime.fromisoformat(updated_purchase['delivered_date']).date()
+        except:
+            pass
+    
     return Purchase(**updated_purchase)
 
 @api_router.delete("/purchases/{purchase_id}")
