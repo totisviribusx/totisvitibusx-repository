@@ -274,6 +274,24 @@ async def get_dashboard_stats():
         {"status": {"$ne": "Archived"}}
     ).sort("created_at", -1).limit(5).to_list(5)
     
+    # Convert string dates back to date objects for recent purchases
+    for purchase in recent_purchases:
+        if purchase.get('order_date') and isinstance(purchase['order_date'], str):
+            try:
+                purchase['order_date'] = datetime.fromisoformat(purchase['order_date']).date()
+            except:
+                pass
+        if purchase.get('expected_delivery') and isinstance(purchase['expected_delivery'], str):
+            try:
+                purchase['expected_delivery'] = datetime.fromisoformat(purchase['expected_delivery']).date()
+            except:
+                pass
+        if purchase.get('delivered_date') and isinstance(purchase['delivered_date'], str):
+            try:
+                purchase['delivered_date'] = datetime.fromisoformat(purchase['delivered_date']).date()
+            except:
+                pass
+    
     status_counts = await db.purchases.aggregate([
         {"$match": {"status": {"$ne": "Archived"}}},
         {"$group": {"_id": "$status", "count": {"$sum": 1}}}
