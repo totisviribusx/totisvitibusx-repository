@@ -153,6 +153,25 @@ async def get_purchases(status: Optional[str] = None, archived: bool = False):
         query["status"] = {"$ne": "Archived"}
     
     purchases = await db.purchases.find(query).sort("created_at", -1).to_list(1000)
+    
+    # Convert string dates back to date objects for response model
+    for purchase in purchases:
+        if purchase.get('order_date') and isinstance(purchase['order_date'], str):
+            try:
+                purchase['order_date'] = datetime.fromisoformat(purchase['order_date']).date()
+            except:
+                pass
+        if purchase.get('expected_delivery') and isinstance(purchase['expected_delivery'], str):
+            try:
+                purchase['expected_delivery'] = datetime.fromisoformat(purchase['expected_delivery']).date()
+            except:
+                pass
+        if purchase.get('delivered_date') and isinstance(purchase['delivered_date'], str):
+            try:
+                purchase['delivered_date'] = datetime.fromisoformat(purchase['delivered_date']).date()
+            except:
+                pass
+    
     return [Purchase(**purchase) for purchase in purchases]
 
 @api_router.get("/purchases/{purchase_id}", response_model=Purchase)
